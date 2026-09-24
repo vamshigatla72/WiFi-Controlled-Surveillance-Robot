@@ -1,0 +1,233 @@
+#include <WiFi.h>
+#include <ThingSpeak.h>
+
+WiFiClient client;
+
+const char* ssid = "vamshi";
+const char* password = "Vamshi@22";
+
+String direction = "";
+
+unsigned long channelId = 3505498;
+unsigned int field1 = 1;
+const char* readKey = "0F76VR5917HLPS6W";
+
+#define RMotor_1 4
+#define RMotor_2 5
+#define LMotor_1 6
+#define LMotor_2 7
+
+#define HEADLIGHT_L  0
+#define HEADLIGHT_R  1
+#define LED_WIFI     8
+#define LED_MOTION   9
+#define LED_STOP     10
+
+#define LED_AUX_1    18
+#define LED_AUX_2    19
+#define LED_AUX_3    21
+
+void connectingToWiFi();
+void move_forward();
+void move_backward();
+void turn_left();
+void turn_right();
+void move_stop();
+void set_headlights(bool state);
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("ESP32-C3 Robot Starting...");
+
+  pinMode(RMotor_1, OUTPUT);
+  pinMode(RMotor_2, OUTPUT);
+  pinMode(LMotor_1, OUTPUT);
+  pinMode(LMotor_2, OUTPUT);
+
+  pinMode(HEADLIGHT_L, OUTPUT);
+  pinMode(HEADLIGHT_R, OUTPUT);
+  pinMode(LED_WIFI, OUTPUT);
+  pinMode(LED_MOTION, OUTPUT);
+  pinMode(LED_STOP, OUTPUT);
+
+  pinMode(LED_AUX_1, OUTPUT);
+  pinMode(LED_AUX_2, OUTPUT);
+  pinMode(LED_AUX_3, OUTPUT);
+
+  digitalWrite(LED_AUX_1, LOW);
+  digitalWrite(LED_AUX_2, LOW);
+  digitalWrite(LED_AUX_3, LOW);
+
+  set_headlights(false);
+  move_stop();
+
+  ThingSpeak.begin(client);
+  connectingToWiFi();
+}
+
+void loop() {
+  direction = ThingSpeak.readStringField(
+    channelId,
+    field1,
+    readKey
+  );
+
+  Serial.print("ThingSpeak Command: ");
+  Serial.println(direction);
+
+  direction.trim();
+
+  if (direction == "F") {
+    move_forward();
+  }
+  else if (direction == "B") {
+    move_backward();
+  }
+  else if (direction == "R") {
+    turn_right();
+  }
+  else if (direction == "L") {
+    turn_left();
+  }
+  else if (direction == "S") {
+    move_stop();
+  }
+  else if (direction == "H_ON") {
+    set_headlights(true);
+    Serial.println("Headlights: ON");
+  }
+  else if (direction == "H_OFF") {
+    set_headlights(false);
+    Serial.println("Headlights: OFF");
+  }
+  else if (direction == "LED1_ON") {
+    digitalWrite(LED_AUX_1, HIGH);
+    Serial.println("Aux LED 1: ON");
+  }
+  else if (direction == "LED1_OFF") {
+    digitalWrite(LED_AUX_1, LOW);
+    Serial.println("Aux LED 1: OFF");
+  }
+  else if (direction == "LED2_ON") {
+    digitalWrite(LED_AUX_2, HIGH);
+    Serial.println("Aux LED 2: ON");
+  }
+  else if (direction == "LED2_OFF") {
+    digitalWrite(LED_AUX_2, LOW);
+    Serial.println("Aux LED 2: OFF");
+  }
+  else if (direction == "LED3_ON") {
+    digitalWrite(LED_AUX_3, HIGH);
+    Serial.println("Aux LED 3: ON");
+  }
+  else if (direction == "LED3_OFF") {
+    digitalWrite(LED_AUX_3, LOW);
+    Serial.println("Aux LED 3: OFF");
+  }
+
+  direction = "";
+
+  delay(2000);
+}
+
+void connectingToWiFi() {
+  delay(1000);
+
+  WiFi.disconnect();
+  delay(1000);
+
+  Serial.println();
+  Serial.println("Connecting to WiFi...");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    digitalWrite(LED_WIFI, HIGH);
+    delay(250);
+    digitalWrite(LED_WIFI, LOW);
+    delay(250);
+    Serial.print(".");
+  }
+
+  digitalWrite(LED_WIFI, HIGH);
+
+  Serial.println();
+  Serial.println("WiFi Connected!");
+
+  Serial.print("ESP32-C3 IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  delay(2000);
+}
+
+void move_forward() {
+  Serial.println("FORWARD");
+
+  digitalWrite(LED_MOTION, HIGH);
+  digitalWrite(LED_STOP, LOW);
+
+  digitalWrite(RMotor_1, HIGH);
+  digitalWrite(RMotor_2, LOW);
+
+  digitalWrite(LMotor_1, HIGH);
+  digitalWrite(LMotor_2, LOW);
+}
+
+void move_backward() {
+  Serial.println("BACKWARD");
+
+  digitalWrite(LED_MOTION, HIGH);
+  digitalWrite(LED_STOP, LOW);
+
+  digitalWrite(RMotor_1, LOW);
+  digitalWrite(RMotor_2, HIGH);
+
+  digitalWrite(LMotor_1, LOW);
+  digitalWrite(LMotor_2, HIGH);
+}
+
+void turn_right() {
+  Serial.println("RIGHT");
+
+  digitalWrite(LED_MOTION, HIGH);
+  digitalWrite(LED_STOP, LOW);
+
+  digitalWrite(RMotor_1, LOW);
+  digitalWrite(RMotor_2, HIGH);
+
+  digitalWrite(LMotor_1, HIGH);
+  digitalWrite(LMotor_2, LOW);
+}
+
+void turn_left() {
+  Serial.println("LEFT");
+
+  digitalWrite(LED_MOTION, HIGH);
+  digitalWrite(LED_STOP, LOW);
+
+  digitalWrite(RMotor_1, HIGH);
+  digitalWrite(RMotor_2, LOW);
+
+  digitalWrite(LMotor_1, LOW);
+  digitalWrite(LMotor_2, HIGH);
+}
+
+void move_stop() {
+  Serial.println("STOP");
+
+  digitalWrite(RMotor_1, LOW);
+  digitalWrite(RMotor_2, LOW);
+
+  digitalWrite(LMotor_1, LOW);
+  digitalWrite(LMotor_2, LOW);
+
+  digitalWrite(LED_MOTION, LOW);
+  digitalWrite(LED_STOP, HIGH);
+}
+
+void set_headlights(bool state) {
+  digitalWrite(HEADLIGHT_L, state ? HIGH : LOW);
+  digitalWrite(HEADLIGHT_R, state ? HIGH : LOW);
+}
